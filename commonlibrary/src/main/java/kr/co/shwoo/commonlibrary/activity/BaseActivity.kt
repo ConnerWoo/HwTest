@@ -18,6 +18,9 @@ open class BaseActivity : AppCompatActivity() {
 
     }
 
+    override fun setContentView(layoutResID: Int) {
+        super.setContentView(layoutResID)
+    }
 
     override fun onResume() {
         super.onResume()

@@ -1,7 +1,5 @@
 apply plugin: 'com.android.application'
-
 apply plugin: 'kotlin-android'
-
 apply plugin: 'kotlin-android-extensions'
 
 android {
@@ -37,7 +35,11 @@ dependencies {
     implementation project(path: ':commonlibrary')
     /* Third_Party_Library :: [ Volley ] */
     implementation "com.android.volley:volley:$volleyVersion"
+    implementation 'androidx.appcompat:appcompat:1.1.0'
 
+    implementation "androidx.recyclerview:recyclerview:1.0.0"
 
+    implementation 'com.squareup.retrofit2:retrofit:2.0.0'
+    implementation 'com.squareup.retrofit2:converter-gson:2.0.0'
 
 }
