@@ -11,13 +11,17 @@ import android.view.inputmethod.EditorInfo
 import android.view.inputmethod.InputMethodManager
 import android.widget.EditText
 import androidx.appcompat.app.AppCompatActivity
+import androidx.recyclerview.widget.LinearLayoutManager
+import androidx.recyclerview.widget.RecyclerView
 import kotlinx.android.synthetic.main.activity_main.*
 import kr.co.shwoo.commonlibrary.activity.BaseActivity
 import kr.co.shwoo.hwtest.R
+import kr.co.shwoo.hwtest.adapter.MainRcvAdapter
 import kr.co.shwoo.hwtest.dao.KakaoDAO
-import kr.co.shwoo.hwtest.network.model.ResponseModel
 import kr.co.shwoo.hwtest.network.IResponse
 import kr.co.shwoo.hwtest.network.KakaoReqData
+import kr.co.shwoo.hwtest.network.model.Document
+import kr.co.shwoo.hwtest.network.model.ResponseModel
 
 
 /**
@@ -79,11 +83,18 @@ class MainActivity : AppCompatActivity() {
 
     private val TAG = this.javaClass.simpleName
 
+    /** current list of view */
+    private var arrList = mutableListOf<Document>()
+    /** current page index. ( Int type has a bug :: -128 ~ 127 ) */
+    private var lPageIndex : Long = 1
+    /** Page PAGE_SIZE */
+    private var PAGE_SIZE : Long = 25
 
     /** search input Text */
     var searchText: String? = ""
     /** sort type index */
-    var mISortType:Int = SORT_TYPE.ACCURACY.index
+    private var mISortType:Int = SORT_TYPE.ACCURACY.index
+    private var mICategoryType: Int = CATEGORY_TYPE.ALL.index
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
@@ -100,21 +111,55 @@ class MainActivity : AppCompatActivity() {
             }
             false
         }
+
+        et_activity_main_input.addTextChangedListener(object : TextWatcher {
+            override fun afterTextChanged(p0: Editable?) {
+                // TODO :: clear list.
+                clearPreviousList()
+            }
+
+            override fun beforeTextChanged(p0: CharSequence?, p1: Int, p2: Int, p3: Int) {
+
+            }
+
+            override fun onTextChanged(p0: CharSequence?, p1: Int, p2: Int, p3: Int) {
+                // show recent list.
+
+            }
+        })
+
+        setRcvLayoutManager(LinearLayoutManager(this))
     }
 
 
+    private fun setRcvLayoutManager(layoutManager : RecyclerView.LayoutManager) {
+        rcv_activity_main.layoutManager = layoutManager
+    }
+
+
+    private var mAdapter : MainRcvAdapter? = null
     /**
      * [List] update view adapter.
      */
     private fun updateListAdapter() {
+        if(mAdapter == null) {
+            mAdapter = MainRcvAdapter(this, arrList)
+            rcv_activity_main.adapter = mAdapter
 
+        } else {
+            mAdapter?.docList = arrList
+        }
+        Log.d(TAG, "mAdapter?.docList.size = ${mAdapter?.docList?.size}")
+        mAdapter?.notifyDataSetChanged()
     }
 
 
-    /**
+    /**yyy
      * [List] :: clear previous list.
      */
     private fun clearPreviousList() {
+        if(!arrList.isNullOrEmpty())
+            arrList.clear()
 
     }
 
@@ -140,15 +185,22 @@ class MainActivity : AppCompatActivity() {
         // TODO :: start request with search text. ( do not trim!! )
 
         val sort = getSortType()
-        val params = KakaoReqData(sort.value, "1", "25", searchText)
-        KakaoDAO.getInstance().requestBlogList(params, object : IResponse<ResponseModel> {
+        val params = KakaoReqData(sort.value, lPageIndex, PAGE_SIZE, searchText)
+
+        val callback = object : IResponse<ResponseModel> {
 
             /* case 1-1. 조회 성공 ( 상태코드 : 200 ~ 300 ) */
             override fun onSuccess(response: ResponseModel?) {
                 /* case 2-1. 캐싱 x.:: 리스트에 add 이후에 제목( colName :: title )으로 sorting 해서 25 ( pageSize:MAX = 25 ) 개 노출. */
                 Log.d(TAG, "ResponseModel = ${response.toString()}")
-            }
 
+                // :: update list.
+                var arrTemp = response!!.documents?.toMutableList()
+                if(!arrTemp.isNullOrEmpty())
+                    arrList = arrTemp!!.union(arrList).toMutableList()
+
+                updateListAdapter()
+            }
 
             /* case 1-2. 조회 실패 ( 기타 상태코드 ) */
             override fun onFail(error: Throwable?) {
@@ -156,8 +208,30 @@ class MainActivity : AppCompatActivity() {
                 error?.printStackTrace()
 
             }
+        }
 
-        })
+        val categoryType : CATEGORY_TYPE = getCategoryType()
+        when(categoryType) {
+            CATEGORY_TYPE.ALL -> {
+                KakaoDAO.getInstance().requestAllList(params, callback)
+            }
+            CATEGORY_TYPE.BLOG -> {
+                KakaoDAO.getInstance().requestBlogList(params, callback)
+            }
+            CATEGORY_TYPE.CAFE -> {
+                KakaoDAO.getInstance().requestCafeList(params, callback)
+            }
+        }
+
+
+    }
+
+    private fun getCategoryType(): CATEGORY_TYPE {
+        for(type in CATEGORY_TYPE.values()) {
+            if(mICategoryType == type.index)
+                return type
+        }
+        return CATEGORY_TYPE.ALL
     }
 
 
@@ -258,4 +332,11 @@ class MainActivity : AppCompatActivity() {
 enum class SORT_TYPE(val value: String, val index : Int) {
     ACCURACY("accuracy", 0)        //  정확도순 ( Default )
     , RECENCY("recency", 1)        //  최신순
+}
+
+
+enum class CATEGORY_TYPE(val index : Int) {
+    ALL(0)        //  전체 ( Default )
+    , BLOG(1)     //  블로그만.
+    , CAFE(2)     //  카페만
 }

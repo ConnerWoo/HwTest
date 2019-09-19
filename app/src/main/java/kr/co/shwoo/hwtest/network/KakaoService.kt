@@ -3,13 +3,12 @@ package kr.co.shwoo.hwtest.network
 import kr.co.shwoo.hwtest.network.model.ResponseModel
 import retrofit2.Call
 import retrofit2.http.GET
-import retrofit2.http.Headers
 import retrofit2.http.Query
 
 
 data class KakaoReqData(val sort: String
-                        , val page: String
-                        , val size: String
+                        , val page: Long
+                        , val size: Long
                         , val searchText: String?)
 
 

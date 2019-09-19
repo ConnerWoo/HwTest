@@ -2,5 +2,8 @@
     <string name="app_name">HwTest</string>
 
     <string name="hint_please_input_search_text">검색어를 입력하세요.</string>
+    <string name="label_category_blog">B</string>
+    <string name="label_category_cafe">C</string>
+    <string name="str_content_description_thumbnail">썸네일</string>
 
 </resources>

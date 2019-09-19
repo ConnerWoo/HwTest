@@ -2,6 +2,7 @@ package kr.co.shwoo.hwtest.network.model
 
 
 data class Document(var blogname: String
+                    , var cafename: String
                     , var contents: String
                     , var datetime: String
                     , var thumbnail: String
